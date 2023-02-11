@@ -195,6 +195,7 @@ class Explosion(Sprite):
         self.animation_frame = 0
 
     def update(self):
+        # change explosion animation (2 frames)
         self.animation_frame = self.frame // 2
         self.frame += 1
 
@@ -210,8 +211,58 @@ class Explosion(Sprite):
     def update_all(cls):
         for sprite in cls.sprites.copy():
             sprite.update()
-            if sprite.animation_frame > 3:
+            if sprite.animation_frame > 2:
                 cls.sprites.popleft()
+
+
+class Coin(Sprite):
+    width = 8
+    height = 8
+    frame = 0
+
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.vx = 2.0 * random.random() + 0.8
+        self.frame = 0
+        self.animation_frame = 0
+
+    def update(self):
+        self.x -= self.vx
+        self.animation_frame = self.frame // 3 % 4
+        self.frame += 1
+
+    def draw(self):
+        pyxel.blt(x=int(self.x), y=self.y, img=0,
+                  u=48, v=Coin.height*self.animation_frame, w=Coin.width, h=Coin.height, colkey=0)
+
+    @classmethod
+    def append(cls):
+        cls.sprites.append(
+            cls(pyxel.width, random.randint(0, pyxel.height - cls.height)))
+
+    @classmethod
+    def update_all(cls):
+        if cls.frame % 8 == 0:
+            cls.append()
+        for sprite in cls.sprites.copy():
+            sprite.update()
+            if sprite.x < -cls.width:
+                cls.sprites.remove(sprite)
+                continue
+
+            if sprite.x < Player.player.x + Player.width and Player.player.x < sprite.x + cls.width and sprite.y < Player.player.y + Player.height and Player.player.y < sprite.y + cls.height:
+                # if App.game_mode == 1:
+                #     App.score += 1
+                cls.sprites.remove(sprite)
+                continue
+
+            for bullet in Bullet.sprites:
+                if sprite.x < bullet.x + Bullet.width and bullet.x < sprite.x + cls.width and sprite.y < bullet.y + Bullet.height and bullet.y < sprite.y + cls.height:
+                    cls.sprites.remove(sprite)
+                    break
+
+        cls.frame += 1
 
 
 
@@ -290,6 +341,7 @@ class Game:
         Bullet.setup()
         Alien.setup()
         Explosion.setup()
+        Coin.setup()
     
     def update(self):
         Game.start_frame_count = pyxel.frame_count
@@ -297,6 +349,7 @@ class Game:
         Bullet.update_all()
         Alien.update_all()
         Explosion.update_all()
+        Coin.update_all()
 
         Player.update()
 
@@ -307,6 +360,7 @@ class Game:
         Bullet.draw_all()
         Alien.draw_all()
         Explosion.draw_all()
+        Coin.draw_all()
 
         Player.draw()
 
