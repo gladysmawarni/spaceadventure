@@ -142,7 +142,9 @@ class Alien(Sprite):
         self.animation_frame = 0
     
     def update(self):
+        # go left
         self.x -= self.vx
+        # change the animation of the alien
         self.animation_frame = self.frame // 5 % 2
         self.frame += 1
     
@@ -155,6 +157,7 @@ class Alien(Sprite):
     
     @classmethod
     def append(cls):
+        # append in random starting position (x)
         cls.sprites.append(
             cls(pyxel.width, random.randint(0, pyxel.height - cls.height)))
 
@@ -167,17 +170,49 @@ class Alien(Sprite):
             if sprite.x < -cls.width:
                 cls.sprites.remove(sprite)
                 continue
-
+            
+            # if bullet touched the alien, remove both
+            # add explosion sprite
             for bullet in Bullet.sprites.copy():
                 if sprite.x < bullet.x + Bullet.width and bullet.x < sprite.x + cls.width and sprite.y < bullet.y + Bullet.height and bullet.y < sprite.y + cls.height:
                     cls.sprites.remove(sprite)
                     Bullet.sprites.remove(bullet)
-                    #Explosion.append(sprite.x, sprite.y)
+                    Explosion.append(sprite.x, sprite.y)
                     break
 
-
-
         cls.frame += 1
+
+
+class Explosion(Sprite):
+    count = 0
+    width = 16
+    height = 16
+
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.frame = 0
+        self.animation_frame = 0
+
+    def update(self):
+        self.animation_frame = self.frame // 2
+        self.frame += 1
+
+    def draw(self):
+        pyxel.blt(x=self.x, y=self.y, img=0,
+                u=32, v=Explosion.height*self.animation_frame, w=Explosion.width, h=Explosion.height, colkey=0)
+
+    @classmethod
+    def append(cls, x, y):
+        cls.sprites.append(cls(x=x, y=y))
+
+    @ classmethod
+    def update_all(cls):
+        for sprite in cls.sprites.copy():
+            sprite.update()
+            if sprite.animation_frame > 3:
+                cls.sprites.popleft()
+
 
 
 ### ----------------------------------- ###
@@ -254,12 +289,14 @@ class Game:
         Star.setup()
         Bullet.setup()
         Alien.setup()
+        Explosion.setup()
     
     def update(self):
         Game.start_frame_count = pyxel.frame_count
         Star.update_all()
         Bullet.update_all()
         Alien.update_all()
+        Explosion.update_all()
 
         Player.update()
 
@@ -269,6 +306,7 @@ class Game:
         Star.draw_all()
         Bullet.draw_all()
         Alien.draw_all()
+        Explosion.draw_all()
 
         Player.draw()
 
