@@ -29,6 +29,7 @@ class Sprite:
             sprite.draw()
 
 
+## ----- Background Stars ------ ##
 class Star(Sprite):
     frame = 0
     count = 0
@@ -91,6 +92,7 @@ class Star(Sprite):
         cls.frame += 1
 
 
+## ----- Spaceship Bullet ----- ##
 class Bullet(Sprite):
     width = 8
     height = 8
@@ -127,6 +129,7 @@ class Bullet(Sprite):
                 cls.sprites.popleft()
 
 
+## ----- Alien inside UFO (Enemy) ----- ##
 class Alien(Sprite):
     width = 16
     height = 16
@@ -137,7 +140,7 @@ class Alien(Sprite):
         self.y = y
 
         # how fast the alien go
-        self.vx = (2 * random.random() + 0.8)
+        self.vx = (1.7 * random.random() + 0.5)
         self.frame = 0
         self.animation_frame = 0
     
@@ -157,7 +160,8 @@ class Alien(Sprite):
     
     @classmethod
     def append(cls):
-        # append in random starting position (x)
+        # append in random starting position
+        # pyxel.width -> the very last frame of the game (right)
         cls.sprites.append(
             cls(pyxel.width, random.randint(0, pyxel.height - cls.height)))
 
@@ -183,6 +187,7 @@ class Alien(Sprite):
         cls.frame += 1
 
 
+## ----- Exploding Alien ----- ##
 class Explosion(Sprite):
     count = 0
     width = 16
@@ -215,6 +220,7 @@ class Explosion(Sprite):
                 cls.sprites.popleft()
 
 
+## ------ Moneyyyy (Score) ----- ##
 class Coin(Sprite):
     width = 8
     height = 8
@@ -223,12 +229,14 @@ class Coin(Sprite):
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.vx = 2.0 * random.random() + 0.8
+        self.vx = 1.5 
         self.frame = 0
         self.animation_frame = 0
 
     def update(self):
+        # go left
         self.x -= self.vx
+        # change coin animation (4 frames)
         self.animation_frame = self.frame // 3 % 4
         self.frame += 1
 
@@ -243,7 +251,7 @@ class Coin(Sprite):
 
     @classmethod
     def update_all(cls):
-        if cls.frame % 8 == 0:
+        if cls.frame % 40 == 0:
             cls.append()
         for sprite in cls.sprites.copy():
             sprite.update()
@@ -256,11 +264,6 @@ class Coin(Sprite):
                 #     App.score += 1
                 cls.sprites.remove(sprite)
                 continue
-
-            for bullet in Bullet.sprites:
-                if sprite.x < bullet.x + Bullet.width and bullet.x < sprite.x + cls.width and sprite.y < bullet.y + Bullet.height and bullet.y < sprite.y + cls.height:
-                    cls.sprites.remove(sprite)
-                    break
 
         cls.frame += 1
 
