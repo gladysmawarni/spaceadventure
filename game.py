@@ -212,7 +212,7 @@ class Explosion(Sprite):
     def append(cls, x, y):
         cls.sprites.append(cls(x=x, y=y))
 
-    @ classmethod
+    @classmethod
     def update_all(cls):
         for sprite in cls.sprites.copy():
             sprite.update()
@@ -298,10 +298,10 @@ class Player:
         if pyxel.btn(pyxel.KEY_LEFT):
             cls.player.x = max(cls.player.x -2, 2)
         
-        # btnp -> button pressed -> not continuous
         if pyxel.btn(pyxel.KEY_RIGHT):
             cls.player.x = min(cls.player.x + 2, pyxel.width //2)
         
+        # btnp -> button pressed -> not continuous
         if pyxel.btnp(pyxel.KEY_SPACE):
             # from where do the bullet appears (x,y)
             # cls.width - 8 -> so it comes from behind the body of the spaceship
@@ -314,7 +314,7 @@ class Player:
     def draw(cls):
         pyxel.blt(x = cls.player.x, y = cls.player.y, img = 1, u = 0, v = cls.height * cls.player.animation_frame,
                     w = cls.width, h = cls.height, colkey=0)
-    
+     
     @classmethod
     def setup(cls, x, y):
         cls.player = cls(x,y)
@@ -329,13 +329,16 @@ class Game:
     high_score = 0
 
     def __init__(self):
-        pyxel.init(width=160, height=90, title="Space Adventure")
+        pyxel.init(width=120, height=90, title="Space Adventure")
         pyxel.load(filename="assets/res.pyxres")
 
         self.setup()
         pyxel.run(self.update, self.draw)
 
     def setup(self):
+        Game.state = 'Start'
+        Game.score = 0
+
         # initialize x and y 
         Player.setup(x = 5 , y = 50)
 
@@ -347,25 +350,40 @@ class Game:
         Coin.setup()
     
     def update(self):
-        Game.start_frame_count = pyxel.frame_count
-        Star.update_all()
-        Bullet.update_all()
-        Alien.update_all()
-        Explosion.update_all()
-        Coin.update_all()
+        if pyxel.btnp(pyxel.KEY_S) and Game.state == 'Start':
+            Game.state = "Playing"
+            Game.start_frame_count = pyxel.frame_count
 
-        Player.update()
+        if Game.state == "Playing":
+            Star.update_all()
+            Bullet.update_all()
+            Alien.update_all()
+            Explosion.update_all()
+            Coin.update_all()
+
+            Player.update()
 
     def draw(self):
         pyxel.cls(0)
 
-        Star.draw_all()
-        Bullet.draw_all()
-        Alien.draw_all()
-        Explosion.draw_all()
-        Coin.draw_all()
+        if Game.state == 'Start':
+            # Copy the region of size (w, h) from (u, v) of the image bank img (0-2) to (x, y). 
+            # If negative value is set for w and/or h, it will reverse horizontally and/or vertically. 
+            # If colkey is specified, treated as transparent color.
+            pyxel.blt(x = 25, y =15, img = 0,
+                    u = 0, v = 66, w = 67, h = 16, colkey=0)
+            pyxel.blt(x = 28, y =30, img = 0,
+                    u = 0, v = 86, w = 62, h = 8, colkey=0)
+            pyxel.text(15, 60, "Press [S] key to start.", 15)
 
-        Player.draw()
+        elif Game.state == 'Playing':
+            Star.draw_all()
+            Bullet.draw_all()
+            Alien.draw_all()
+            Explosion.draw_all()
+            Coin.draw_all()
+
+            Player.draw()
 
 
 if __name__ == '__main__':
