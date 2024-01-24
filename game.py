@@ -187,7 +187,7 @@ class Alien(Sprite):
         cls.frame += 1
 
 
-## ----- Exploding Alien ----- ##
+## ----- Exploding Alien / Player ----- ##
 class Explosion(Sprite):
     count = 0
     width = 16
@@ -251,6 +251,7 @@ class Coin(Sprite):
 
     @classmethod
     def update_all(cls):
+        # 40 -> not too much coins
         if cls.frame % 40 == 0:
             cls.append()
         for sprite in cls.sprites.copy():
@@ -260,8 +261,8 @@ class Coin(Sprite):
                 continue
 
             if sprite.x < Player.player.x + Player.width and Player.player.x < sprite.x + cls.width and sprite.y < Player.player.y + Player.height and Player.player.y < sprite.y + cls.height:
-                # if App.game_mode == 1:
-                #     App.score += 1
+                if Game.state == "Playing":
+                    Game.score += 1
                 cls.sprites.remove(sprite)
                 continue
 
@@ -367,13 +368,15 @@ class Game:
         pyxel.cls(0)
 
         if Game.state == 'Start':
-            # Copy the region of size (w, h) from (u, v) of the image bank img (0-2) to (x, y). 
-            # If negative value is set for w and/or h, it will reverse horizontally and/or vertically. 
-            # If colkey is specified, treated as transparent color.
+            # space
             pyxel.blt(x = 25, y =15, img = 0,
                     u = 0, v = 66, w = 67, h = 16, colkey=0)
+            
+            # adventure
             pyxel.blt(x = 28, y =30, img = 0,
                     u = 0, v = 86, w = 62, h = 8, colkey=0)
+            
+            # instruction 
             pyxel.text(15, 60, "Press [S] key to start.", 15)
 
         elif Game.state == 'Playing':
@@ -384,6 +387,8 @@ class Game:
             Coin.draw_all()
 
             Player.draw()
+
+            pyxel.text(1, pyxel.height - 7, f"Score: {Game.score}", 12)
 
 
 if __name__ == '__main__':

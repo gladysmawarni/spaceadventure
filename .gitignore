@@ -1,3 +1,4 @@
 nyancat.py
 assets/cat.pyxres
 .venv
+__pycache__
