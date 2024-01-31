@@ -183,6 +183,17 @@ class Alien(Sprite):
                     Bullet.sprites.remove(bullet)
                     Explosion.append(sprite.x, sprite.y)
                     break
+            
+            player_center_x = Player.player.x + Player.width // 2
+            player_center_y = Player.player.y + Player.height // 2
+            sprite_center_x = sprite.x + cls.width // 2
+            sprite_center_y = sprite.y + cls.height // 2
+
+            if (player_center_x - sprite_center_x)**2 + (player_center_y - sprite_center_y)**2 < 10**2:
+                Game.state = "End"
+                if sprite in cls.sprites:
+                    cls.sprites.remove(sprite)
+                Explosion.append(sprite.x, sprite.y)
 
         cls.frame += 1
 
@@ -218,6 +229,7 @@ class Explosion(Sprite):
             sprite.update()
             if sprite.animation_frame > 2:
                 cls.sprites.popleft()
+        
 
 
 ## ------ Moneyyyy (Score) ----- ##
@@ -310,6 +322,8 @@ class Player:
             Bullet.append(cls.player.x + cls.width - 8, 
                             cls.player.y + cls.height // 2 -8 //2)
 
+        # TODO: how to delete the spaceship and replace with the explosions
+            
 
     @classmethod
     def draw(cls):
@@ -340,7 +354,7 @@ class Game:
         Game.state = 'Start'
         Game.score = 0
 
-        # initialize x and y 
+        # initialize x and y of the spaceship
         Player.setup(x = 5 , y = 50)
 
         # initialize deque
@@ -363,6 +377,10 @@ class Game:
             Coin.update_all()
 
             Player.update()
+        
+        if Game.state == "End":
+            Star.update_all()
+            Explosion.update_all()
 
     def draw(self):
         pyxel.cls(0)
@@ -387,8 +405,16 @@ class Game:
             Coin.draw_all()
 
             Player.draw()
-
             pyxel.text(1, pyxel.height - 7, f"Score: {Game.score}", 12)
+        
+        elif Game.state == "End":
+            Star.draw_all()
+            Explosion.append(Player.player.x, Player.player.y)
+            Explosion.draw_all()
+            pyxel.text(1, pyxel.height - 7, f"Final Score: {Game.score}", 12)
+             # game over
+            pyxel.blt(x = 28, y =25, img = 1,
+                    u = 16, v = 48, w = 79, h = 79, colkey=0)
 
 
 if __name__ == '__main__':
