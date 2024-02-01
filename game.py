@@ -1,7 +1,8 @@
+## ------------- LIBRARY -------------- ##
 import pyxel
 from collections import deque
 import random
-
+import csv
 
 ### ----------------------------------- ###
 ### ------------- SPRITES ------------- ###
@@ -301,6 +302,10 @@ class Player:
         cls.player.animation_frame = cls.player.frame // 3 % 2
         cls.player.frame += 1
 
+        if pyxel.input_text:
+            print(pyxel.input_text[0])
+
+
         # min and max so it does not go past the screen 
         if pyxel.btn(pyxel.KEY_UP):
             cls.player.y = max(cls.player.y -2, 0)
@@ -321,8 +326,6 @@ class Player:
             # cls.height //2 -> too low | -8 -> too high | //2 -> perfectly middle
             Bullet.append(cls.player.x + cls.width - 8, 
                             cls.player.y + cls.height // 2 -8 //2)
-
-        # TODO: how to delete the spaceship and replace with the explosions
             
 
     @classmethod
@@ -334,21 +337,20 @@ class Player:
     def setup(cls, x, y):
         cls.player = cls(x,y)
 
-
 ### ----------------------------------- ###
 ### --------------- GAME -------------- ###
 ### ----------------------------------- ###
 
 class Game:
     score = 0
-    high_score = 0
 
     def __init__(self):
+        # size of the screen
         pyxel.init(width=120, height=90, title="Space Adventure")
         pyxel.load(filename="assets/res.pyxres")
 
         self.setup()
-        pyxel.run(self.update, self.draw)
+        pyxel.run(self.draw, self.update)
 
     def setup(self):
         Game.state = 'Start'
@@ -365,9 +367,16 @@ class Game:
         Coin.setup()
     
     def update(self):
-        if pyxel.btnp(pyxel.KEY_S) and Game.state == 'Start':
+        # START PLAYING - NEW OR LOAD
+        if (pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_L)) and Game.state == 'Start':
             Game.state = "Playing"
             Game.start_frame_count = pyxel.frame_count
+
+            # # TODO: to load 
+            # if pyxel.btnp(pyxel.KEY_L):
+            #     with open('load.csv') as file:
+            #         content = file.readlines()
+            #         Game.score = int(content[0])
 
         if Game.state == "Playing":
             Star.update_all()
@@ -381,6 +390,8 @@ class Game:
         if Game.state == "End":
             Star.update_all()
             Explosion.update_all()
+        
+
 
     def draw(self):
         pyxel.cls(0)
@@ -395,7 +406,17 @@ class Game:
                     u = 0, v = 86, w = 62, h = 8, colkey=0)
             
             # instruction 
-            pyxel.text(15, 60, "Press [S] key to start.", 15)
+            pyxel.text(8, 60, "Press [Space] key to start.", 15)
+
+            # # TODO: check for load
+            # with open('load.csv') as file:
+            #     content = file.readlines()
+            #     try: 
+            #         content[0]
+            #         pyxel.text(12, 70, "Press [L] key to load.", 15)
+            #     except:
+            #         pass
+
 
         elif Game.state == 'Playing':
             Star.draw_all()
@@ -405,14 +426,48 @@ class Game:
             Coin.draw_all()
 
             Player.draw()
+            pyxel.text(1, pyxel.height - 14, f"[M] Menu", 13)
             pyxel.text(1, pyxel.height - 7, f"Score: {Game.score}", 12)
+
+            if pyxel.btnp(pyxel.KEY_M):
+                Game.state = 'Pause'
+
+            # # TODO: to save - need NAME & MENU
+            # if pyxel.btnp(pyxel.KEY_S):
+            #     # open the file in the write mode
+            #     with open('load.csv', 'w') as f:
+            #         # create the csv writer
+            #         writer = csv.writer(f)
+            #         # write a row to the csv file
+            #         writer.writerow([Game.score])
+
+        elif Game.state == "Pause":
+            Star.draw_all()
+            Star.update_all()
+            # space
+            pyxel.blt(x = 25, y =15, img = 0,
+                    u = 0, v = 66, w = 67, h = 16, colkey=0)
+            
+            # adventure
+            pyxel.blt(x = 28, y =30, img = 0,
+                    u = 0, v = 86, w = 62, h = 8, colkey=0)
+            
+            # instruction 
+            pyxel.text(32, 50, "[S] save game", 11)
+            pyxel.text(35, 60, "[M] go back", 11)
+
+            if pyxel.btnp(pyxel.KEY_M):
+                Game.state = "Playing"
+
+            # TODO: save game
+
         
         elif Game.state == "End":
             Star.draw_all()
             Explosion.append(Player.player.x, Player.player.y)
             Explosion.draw_all()
             pyxel.text(1, pyxel.height - 7, f"Final Score: {Game.score}", 12)
-             # game over
+            # game over
             pyxel.blt(x = 28, y =25, img = 1,
                     u = 16, v = 48, w = 79, h = 79, colkey=0)
 
