@@ -2,7 +2,8 @@
 import pyxel
 from collections import deque
 import random
-import csv
+import pandas as pd
+
 
 ### ----------------------------------- ###
 ### ------------- SPRITES ------------- ###
@@ -302,10 +303,6 @@ class Player:
         cls.player.animation_frame = cls.player.frame // 3 % 2
         cls.player.frame += 1
 
-        if pyxel.input_text:
-            print(pyxel.input_text[0])
-
-
         # min and max so it does not go past the screen 
         if pyxel.btn(pyxel.KEY_UP):
             cls.player.y = max(cls.player.y -2, 0)
@@ -342,19 +339,26 @@ class Player:
 ### ----------------------------------- ###
 
 class Game:
-    score = 0
-
     def __init__(self):
         # size of the screen
         pyxel.init(width=120, height=90, title="Space Adventure")
         pyxel.load(filename="assets/res.pyxres")
 
         self.setup()
-        pyxel.run(self.draw, self.update)
+        pyxel.run(self.update, self.draw)
+
 
     def setup(self):
         Game.state = 'Start'
         Game.score = 0
+
+        # for saving
+        Game.pname = ""
+        Game.save_state = False
+
+        # load save
+        Game.savefile = pd.read_csv('load.csv')
+        print({k:v for k,v in zip(Game.savefile['Name'], Game.savefile['Score'])})
 
         # initialize x and y of the spaceship
         Player.setup(x = 5 , y = 50)
@@ -366,6 +370,7 @@ class Game:
         Explosion.setup()
         Coin.setup()
     
+
     def update(self):
         # START PLAYING - NEW OR LOAD
         if (pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_L)) and Game.state == 'Start':
@@ -387,10 +392,12 @@ class Game:
 
             Player.update()
         
+        if Game.state == "Pause":
+            Star.update_all()   
+
         if Game.state == "End":
             Star.update_all()
             Explosion.update_all()
-        
 
 
     def draw(self):
@@ -432,18 +439,10 @@ class Game:
             if pyxel.btnp(pyxel.KEY_M):
                 Game.state = 'Pause'
 
-            # # TODO: to save - need NAME & MENU
-            # if pyxel.btnp(pyxel.KEY_S):
-            #     # open the file in the write mode
-            #     with open('load.csv', 'w') as f:
-            #         # create the csv writer
-            #         writer = csv.writer(f)
-            #         # write a row to the csv file
-            #         writer.writerow([Game.score])
 
         elif Game.state == "Pause":
             Star.draw_all()
-            Star.update_all()
+
             # space
             pyxel.blt(x = 25, y =15, img = 0,
                     u = 0, v = 66, w = 67, h = 16, colkey=0)
@@ -460,6 +459,36 @@ class Game:
                 Game.state = "Playing"
 
             # TODO: save game
+            if pyxel.btnp(pyxel.KEY_S):
+                Game.state = "Save Menu"
+        
+
+        elif Game.state == "Save Menu":
+            pyxel.text(35, 20, "Insert Name", 11)
+            pyxel.text(27, 60, "[Enter] to save", 11)
+
+            if pyxel.input_text:
+                if len(Game.pname) <= 10:
+                    Game.pname += pyxel.input_text[0]
+                else:
+                    pass
+            pyxel.text(35, 30, Game.pname, 9)
+
+            if pyxel.btnp(pyxel.KEY_RETURN) and Game.save_state == False:
+                pyxel.text(45, 50, "Saved!", 10)
+
+                save_dict = {k:v for k,v in zip(Game.savefile['Name'], Game.savefile['Score'])}
+                save_dict[Game.pname] = Game.score
+
+                df = pd.DataFrame(save_dict.items(), columns=['Name', 'Score'])
+                df.to_csv('load.csv', index=False)
+
+                Game.save_state = True
+            
+            if Game.save_state == True:
+                Game.state = "Playing"
+                Game.save_state = False
+                Game.pname = ""
 
         
         elif Game.state == "End":
