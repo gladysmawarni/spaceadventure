@@ -357,8 +357,8 @@ class Game:
         Game.save_state = False
 
         # load save
-        Game.savefile = pd.read_csv('load.csv')
-        print({k:v for k,v in zip(Game.savefile['Name'], Game.savefile['Score'])})
+        savefile = pd.read_csv('load.csv')
+        Game.save_dict = {k:v for k,v in zip(savefile['Name'], savefile['Score'])}
 
         # initialize x and y of the spaceship
         Player.setup(x = 5 , y = 50)
@@ -373,16 +373,13 @@ class Game:
 
     def update(self):
         # START PLAYING - NEW OR LOAD
-        if (pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.KEY_L)) and Game.state == 'Start':
+        if pyxel.btnp(pyxel.KEY_SPACE) and Game.state == 'Start':
             Game.state = "Playing"
             Game.start_frame_count = pyxel.frame_count
 
-            # # TODO: to load 
-            # if pyxel.btnp(pyxel.KEY_L):
-            #     with open('load.csv') as file:
-            #         content = file.readlines()
-            #         Game.score = int(content[0])
-
+        if (pyxel.btnp(pyxel.KEY_L)) and (Game.state == 'Start') and (len(Game.save_dict) > 0):
+            Game.state = "Load Menu"
+          
         if Game.state == "Playing":
             Star.update_all()
             Bullet.update_all()
@@ -415,14 +412,9 @@ class Game:
             # instruction 
             pyxel.text(8, 60, "Press [Space] key to start.", 15)
 
-            # # TODO: check for load
-            # with open('load.csv') as file:
-            #     content = file.readlines()
-            #     try: 
-            #         content[0]
-            #         pyxel.text(12, 70, "Press [L] key to load.", 15)
-            #     except:
-            #         pass
+            # check for load
+            if len(Game.save_dict) > 0:
+                pyxel.text(17, 70, "Press [L] key to load.", 15)
 
 
         elif Game.state == 'Playing':
@@ -444,7 +436,7 @@ class Game:
             Star.draw_all()
 
             # space
-            pyxel.blt(x = 25, y =15, img = 0,
+            pyxel.blt(x = 25,y =15, img = 0,
                     u = 0, v = 66, w = 67, h = 16, colkey=0)
             
             # adventure
@@ -455,10 +447,11 @@ class Game:
             pyxel.text(32, 50, "[S] save game", 11)
             pyxel.text(35, 60, "[M] go back", 11)
 
+            # resume playing
             if pyxel.btnp(pyxel.KEY_M):
                 Game.state = "Playing"
 
-            # TODO: save game
+            # go to save menu
             if pyxel.btnp(pyxel.KEY_S):
                 Game.state = "Save Menu"
         
@@ -477,10 +470,9 @@ class Game:
             if pyxel.btnp(pyxel.KEY_RETURN) and Game.save_state == False:
                 pyxel.text(45, 50, "Saved!", 10)
 
-                save_dict = {k:v for k,v in zip(Game.savefile['Name'], Game.savefile['Score'])}
-                save_dict[Game.pname] = Game.score
+                Game.save_dict[Game.pname] = Game.score
 
-                df = pd.DataFrame(save_dict.items(), columns=['Name', 'Score'])
+                df = pd.DataFrame(Game.save_dict.items(), columns=['Name', 'Score'])
                 df.to_csv('load.csv', index=False)
 
                 Game.save_state = True
@@ -490,7 +482,29 @@ class Game:
                 Game.save_state = False
                 Game.pname = ""
 
-        
+        elif Game.state == "Load Menu":
+            pyxel.text(25, 20, "Select Load File", 11)
+            # pyxel.text(35, 40, Game.save_dict, 11)
+            line = 30
+            order = 1
+            for name, score in list(zip(Game.save_dict.keys(), Game.save_dict.values())):
+                pyxel.text(30, line, "[" + str(order) + "]", 7)
+                pyxel.text(50, line, name, 14)
+                pyxel.text(80, line, str(score), 12)
+                order += 1
+                line += 10
+            
+            if pyxel.input_text:
+                try:
+                    if int(pyxel.input_text[0]) in list(range(1, order)):
+                        Game.score = list(Game.save_dict.values())[int(pyxel.input_text[0]) - 1]
+                        Game.state = "Playing"
+                        Game.start_frame_count = pyxel.frame_count
+                except ValueError:
+                    pass
+                
+            
+
         elif Game.state == "End":
             Star.draw_all()
             Explosion.append(Player.player.x, Player.player.y)
