@@ -355,6 +355,7 @@ class Game:
         # for saving
         Game.pname = ""
         Game.save_state = False
+        Game.load_state = False
 
         # load save
         savefile = pd.read_csv('load.csv')
@@ -456,7 +457,9 @@ class Game:
                 Game.state = "Save Menu"
         
 
-        elif Game.state == "Save Menu":
+        # save menu for new game (not loaded)
+        elif (Game.state == "Save Menu") and (Game.load_state == False):
+            # TODO: make the save slot limited to 5          
             pyxel.text(35, 20, "Insert Name", 11)
             pyxel.text(27, 60, "[Enter] to save", 11)
 
@@ -481,6 +484,22 @@ class Game:
                 Game.state = "Playing"
                 Game.save_state = False
                 Game.pname = ""
+        
+
+        elif (Game.state == "Save Menu") and (Game.load_state == True):
+            pyxel.text(45, 50, "Saved!", 10)
+
+            Game.save_dict[Game.pname] = Game.score
+
+            df = pd.DataFrame(Game.save_dict.items(), columns=['Name', 'Score'])
+            df.to_csv('load.csv', index=False)
+
+            Game.save_state = True
+            
+            if Game.save_state == True:
+                Game.state = "Playing"
+                Game.save_state = False
+
 
         elif Game.state == "Load Menu":
             pyxel.text(25, 20, "Select Load File", 11)
@@ -494,16 +513,22 @@ class Game:
                 order += 1
                 line += 10
             
+            # it listens to key input with this
+            if pyxel.btnp(pyxel.KEY_P):
+                print("P")
+            
             if pyxel.input_text:
+                print(pyxel.input_text[0])
                 try:
                     if int(pyxel.input_text[0]) in list(range(1, order)):
                         Game.score = list(Game.save_dict.values())[int(pyxel.input_text[0]) - 1]
                         Game.state = "Playing"
                         Game.start_frame_count = pyxel.frame_count
+                        Game.load_state = True
+                        Game.pname = list(Game.save_dict.keys())[int(pyxel.input_text[0]) - 1]
                 except ValueError:
                     pass
-                
-            
+                  
 
         elif Game.state == "End":
             Star.draw_all()
@@ -513,6 +538,10 @@ class Game:
             # game over
             pyxel.blt(x = 28, y =25, img = 1,
                     u = 16, v = 48, w = 79, h = 79, colkey=0)
+            
+            pyxel.text(20, 60, "Press [M] to restart", 9)
+            if pyxel.btnp(pyxel.KEY_M):
+                Game.state = "Start"
 
 
 if __name__ == '__main__':
