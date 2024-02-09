@@ -354,12 +354,16 @@ class Game:
 
         # for saving
         Game.pname = ""
-        Game.save_state = False
+        Game.saveindex = 0
+        Game.save_state = 0
         Game.load_state = False
 
         # load save
         savefile = pd.read_csv('load.csv')
-        Game.save_dict = {k:v for k,v in zip(savefile['Name'], savefile['Score'])}
+    
+        Game.save_dict = {k:v for k,v in zip(savefile.index, list(zip(savefile['Name'], savefile['Score'])))}
+        print(Game.save_dict)
+
 
         # initialize x and y of the spaceship
         Player.setup(x = 5 , y = 50)
@@ -457,9 +461,36 @@ class Game:
                 Game.state = "Save Menu"
         
 
-        # save menu for new game (not loaded)
-        elif (Game.state == "Save Menu") and (Game.load_state == False):
-            # TODO: make the save slot limited to 5          
+        ## save menu for new game (not loaded)
+        # first screen - select save slot
+        elif (Game.state == "Save Menu") and (Game.load_state == False) and (Game.save_state == 0):
+            # TODO: make the save slot limited to 5 
+            pyxel.text(25, 20, "Select Save Slot", 11)
+            line = 30
+            order = 1
+
+            for i, data in list(zip(Game.save_dict.keys(), Game.save_dict.values())):
+                pyxel.text(30, line, "[" + str(order) + "]", 7)
+                pyxel.text(50, line, data[0], 14)
+                pyxel.text(80, line, str(data[1]), 12)
+                order += 1
+                line += 10
+            
+            if order <= 5:
+                pyxel.text(30, line, "[" + str(order) + "]", 7)
+                order += 1
+                line += 10
+        
+            if pyxel.input_text:
+                try:
+                    if int(pyxel.input_text[0]) in [1,2,3,4,5]:
+                        Game.saveindex = int(pyxel.input_text[0])-1
+                        Game.save_state = 2
+                except ValueError:
+                    pass
+        
+        # second screen - to insert name
+        elif (Game.state == "Save Menu") and (Game.load_state == False) and (Game.save_state == 2):
             pyxel.text(35, 20, "Insert Name", 11)
             pyxel.text(27, 60, "[Enter] to save", 11)
 
@@ -470,46 +501,31 @@ class Game:
                     pass
             pyxel.text(35, 30, Game.pname, 9)
 
-            if pyxel.btnp(pyxel.KEY_RETURN) and Game.save_state == False:
+            if pyxel.btnp(pyxel.KEY_RETURN) and Game.save_state == 2:
                 pyxel.text(45, 50, "Saved!", 10)
 
-                Game.save_dict[Game.pname] = Game.score
+                Game.save_dict[Game.saveindex] = [Game.pname, Game.score]
 
-                df = pd.DataFrame(Game.save_dict.items(), columns=['Name', 'Score'])
+                df = pd.DataFrame(Game.save_dict.values(), columns=['Name', 'Score'])
                 df.to_csv('load.csv', index=False)
 
-                Game.save_state = True
+                Game.save_state = 1
             
-            if Game.save_state == True:
+            if Game.save_state == 1:
                 Game.state = "Playing"
-                Game.save_state = False
+                Game.save_state = 0
                 Game.pname = ""
-        
-
-        elif (Game.state == "Save Menu") and (Game.load_state == True):
-            pyxel.text(45, 50, "Saved!", 10)
-
-            Game.save_dict[Game.pname] = Game.score
-
-            df = pd.DataFrame(Game.save_dict.items(), columns=['Name', 'Score'])
-            df.to_csv('load.csv', index=False)
-
-            Game.save_state = True
-            
-            if Game.save_state == True:
-                Game.state = "Playing"
-                Game.save_state = False
-
+    
 
         elif Game.state == "Load Menu":
             pyxel.text(25, 20, "Select Load File", 11)
-            # pyxel.text(35, 40, Game.save_dict, 11)
+
             line = 30
             order = 1
-            for name, score in list(zip(Game.save_dict.keys(), Game.save_dict.values())):
+            for i, data in list(zip(Game.save_dict.keys(), Game.save_dict.values())):
                 pyxel.text(30, line, "[" + str(order) + "]", 7)
-                pyxel.text(50, line, name, 14)
-                pyxel.text(80, line, str(score), 12)
+                pyxel.text(50, line, data[0], 14)
+                pyxel.text(80, line, str(data[1]), 12)
                 order += 1
                 line += 10
             
@@ -518,16 +534,36 @@ class Game:
                 print("P")
             
             if pyxel.input_text:
-                print(pyxel.input_text[0])
                 try:
                     if int(pyxel.input_text[0]) in list(range(1, order)):
-                        Game.score = list(Game.save_dict.values())[int(pyxel.input_text[0]) - 1]
+                        Game.saveindex = int(pyxel.input_text[0]) -1
+                        Game.pname = Game.save_dict[Game.saveindex][0]
+                        Game.score = Game.save_dict[Game.saveindex][1]
+
                         Game.state = "Playing"
                         Game.start_frame_count = pyxel.frame_count
                         Game.load_state = True
-                        Game.pname = list(Game.save_dict.keys())[int(pyxel.input_text[0]) - 1]
+                        
                 except ValueError:
                     pass
+        
+
+        # save menu for loaded game
+        elif (Game.state == "Save Menu") and (Game.load_state == True):
+            pyxel.text(45, 50, "Saved!", 10)
+
+            Game.save_dict[Game.saveindex] = [Game.pname, Game.score]
+
+            df = pd.DataFrame(Game.save_dict.values(), columns=['Name', 'Score'])
+            df.to_csv('load.csv', index=False)
+
+
+            Game.save_state = 1
+            
+            if Game.save_state == 1:
+                Game.state = "Playing"
+                Game.save_state = False
+
                   
 
         elif Game.state == "End":
