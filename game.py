@@ -358,11 +358,10 @@ class Game:
         Game.save_state = 0
         Game.load_state = False
 
-        # load save
+        # load save file
+        # ex: {0 : [name, score], 1: [name, score]}
         savefile = pd.read_csv('load.csv')
-    
         Game.save_dict = {k:v for k,v in zip(savefile.index, list(zip(savefile['Name'], savefile['Score'])))}
-        print(Game.save_dict)
 
 
         # initialize x and y of the spaceship
@@ -377,26 +376,29 @@ class Game:
     
 
     def update(self):
-        # START PLAYING - NEW OR LOAD
+        ## START PLAYING - NEW OR LOAD
+        # new game
         if pyxel.btnp(pyxel.KEY_SPACE) and Game.state == 'Start':
             Game.state = "Playing"
             Game.start_frame_count = pyxel.frame_count
-
+        # load saved game -> go to the load menu
         if (pyxel.btnp(pyxel.KEY_L)) and (Game.state == 'Start') and (len(Game.save_dict) > 0):
             Game.state = "Load Menu"
-          
+        
+        # when game is playing -> update all
         if Game.state == "Playing":
             Star.update_all()
             Bullet.update_all()
             Alien.update_all()
             Explosion.update_all()
             Coin.update_all()
-
             Player.update()
         
+        # when game is paused (on menu) -> let stars continue
         if Game.state == "Pause":
             Star.update_all()   
 
+        # when the game is over -> let stars continue and left exploded spaceship there
         if Game.state == "End":
             Star.update_all()
             Explosion.update_all()
@@ -405,6 +407,7 @@ class Game:
     def draw(self):
         pyxel.cls(0)
 
+        # when the app first started - logo + instructions to start
         if Game.state == 'Start':
             # space
             pyxel.blt(x = 25, y =15, img = 0,
@@ -422,6 +425,7 @@ class Game:
                 pyxel.text(17, 70, "Press [L] key to load.", 15)
 
 
+        # when the game is playing 
         elif Game.state == 'Playing':
             Star.draw_all()
             Bullet.draw_all()
@@ -437,6 +441,7 @@ class Game:
                 Game.state = 'Pause'
 
 
+        # when the game is paused - logo + instruction to save or go back
         elif Game.state == "Pause":
             Star.draw_all()
 
@@ -462,25 +467,31 @@ class Game:
         
 
         ## save menu for new game (not loaded)
-        # first screen - select save slot
+        # FIRST screen - select save slot
         elif (Game.state == "Save Menu") and (Game.load_state == False) and (Game.save_state == 0):
-            # TODO: make the save slot limited to 5 
             pyxel.text(25, 20, "Select Save Slot", 11)
+
             line = 30
             order = 1
-
+            # go through the saved data and show it in order
             for i, data in list(zip(Game.save_dict.keys(), Game.save_dict.values())):
+                # number [1-5]
                 pyxel.text(30, line, "[" + str(order) + "]", 7)
+                # name
                 pyxel.text(50, line, data[0], 14)
+                # score
                 pyxel.text(80, line, str(data[1]), 12)
+                # index & line space (y axis)
                 order += 1
                 line += 10
-            
+
+            # if the data is less than 5, we just want to show the number, to indicate the player can create a new save or rewrite the old ones
             if order <= 5:
                 pyxel.text(30, line, "[" + str(order) + "]", 7)
                 order += 1
                 line += 10
-        
+
+            # listen to the user input, to record which save slot they want to save the game
             if pyxel.input_text:
                 try:
                     if int(pyxel.input_text[0]) in [1,2,3,4,5]:
@@ -489,11 +500,13 @@ class Game:
                 except ValueError:
                     pass
         
-        # second screen - to insert name
+        # SECOND screen - to insert name
         elif (Game.state == "Save Menu") and (Game.load_state == False) and (Game.save_state == 2):
+            # instructions
             pyxel.text(35, 20, "Insert Name", 11)
             pyxel.text(27, 60, "[Enter] to save", 11)
 
+            # listen to the keyboard inputs for player's name (Game.pname)
             if pyxel.input_text:
                 if len(Game.pname) <= 10:
                     Game.pname += pyxel.input_text[0]
@@ -501,6 +514,7 @@ class Game:
                     pass
             pyxel.text(35, 30, Game.pname, 9)
 
+            # ENTER key to save the name and score in the specified index/save slot
             if pyxel.btnp(pyxel.KEY_RETURN) and Game.save_state == 2:
                 pyxel.text(45, 50, "Saved!", 10)
 
@@ -511,17 +525,20 @@ class Game:
 
                 Game.save_state = 1
             
+            # continue playing after saving
             if Game.save_state == 1:
                 Game.state = "Playing"
                 Game.save_state = 0
                 Game.pname = ""
     
 
+        # load screen - when player choose to load previous saved game
         elif Game.state == "Load Menu":
             pyxel.text(25, 20, "Select Load File", 11)
 
             line = 30
             order = 1
+            # go through the saved data and show it in order
             for i, data in list(zip(Game.save_dict.keys(), Game.save_dict.values())):
                 pyxel.text(30, line, "[" + str(order) + "]", 7)
                 pyxel.text(50, line, data[0], 14)
@@ -533,6 +550,7 @@ class Game:
             if pyxel.btnp(pyxel.KEY_P):
                 print("P")
             
+            # listen to keyboard inputs to see which save slot the player wants to load
             if pyxel.input_text:
                 try:
                     if int(pyxel.input_text[0]) in list(range(1, order)):
@@ -557,24 +575,26 @@ class Game:
             df = pd.DataFrame(Game.save_dict.values(), columns=['Name', 'Score'])
             df.to_csv('load.csv', index=False)
 
-
             Game.save_state = 1
             
+            # continue playing
             if Game.save_state == 1:
                 Game.state = "Playing"
                 Game.save_state = False
 
-                  
-
+        
+        # game over screen
         elif Game.state == "End":
             Star.draw_all()
             Explosion.append(Player.player.x, Player.player.y)
             Explosion.draw_all()
+            # final score
             pyxel.text(1, pyxel.height - 7, f"Final Score: {Game.score}", 12)
             # game over
             pyxel.blt(x = 28, y =25, img = 1,
                     u = 16, v = 48, w = 79, h = 79, colkey=0)
             
+            # to restart the game
             pyxel.text(20, 60, "Press [M] to restart", 9)
             if pyxel.btnp(pyxel.KEY_M):
                 Game.state = "Start"
