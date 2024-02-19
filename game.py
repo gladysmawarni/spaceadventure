@@ -142,7 +142,7 @@ class Alien(Sprite):
         self.y = y
 
         # how fast the alien go
-        self.vx = (1.7 * random.random() + 0.5)
+        self.vx = (1.7 * random.random() + Game.level)
         self.frame = 0
         self.animation_frame = 0
     
@@ -169,7 +169,7 @@ class Alien(Sprite):
 
     @classmethod
     def update_all(cls):
-        if cls.frame % max(30 - (pyxel.frame_count - Game.start_frame_count) // 600, 5) == 0:
+        if (cls.frame + 1) % 17 == 0:
             cls.append()
         for sprite in cls.sprites.copy():
             sprite.update()
@@ -197,7 +197,7 @@ class Alien(Sprite):
                     cls.sprites.remove(sprite)
                 Explosion.append(sprite.x, sprite.y)
 
-        cls.frame += 1
+        cls.frame += Game.level
 
 
 ## ----- Exploding Alien / Player ----- ##
@@ -351,6 +351,7 @@ class Game:
     def setup(self):
         Game.state = 'Start'
         Game.score = 0
+        Game.level = 1
 
         # for saving
         Game.pname = ""
@@ -439,6 +440,14 @@ class Game:
 
             if pyxel.btnp(pyxel.KEY_M):
                 Game.state = 'Pause'
+            
+            if (Game.score != 0) and (Game.score % 10 == 0):
+                Game.level = int((Game.score / 10) + 1)
+
+                pyxel.blt(x = 20, y=30, img=0,
+                  u=0, v=96, w=72, h=16, colkey=0)
+                
+                pyxel.text(40, 50, f"Level {Game.level}", 14)
 
 
         # when the game is paused - logo + instruction to save or go back
